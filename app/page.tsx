@@ -99,6 +99,7 @@ function KeysModal({ keys, onSave, onClose }) {
 
 export default function TrioAI() {
   const [keys, setKeys] = useState({});
+  const [keys, setKeys] = useState<Record<string,string>>(() => loadKeys());
   const [showKeys, setShowKeys] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [responses, setResponses] = useState({ claude:null, gemini:null, gpt:null });
