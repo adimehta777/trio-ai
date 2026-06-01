@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from "next/server";
+
+export async function POST(req: NextRequest) {
+  const { model, apiKey, prompt } = await req.json();
+
+  try {
+    if (model === "claude") {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-opus-4-6",
+          max_tokens: 1024,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const data = await res.json();
+      return NextResponse.json({ text: data.content?.[0]?.text || "" });
+    }
+
+    if (model === "gemini") {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        }
+      );
+      const data = await res.json();
+      return NextResponse.json({ text: data.candidates?.[0]?.content?.parts?.[0]?.text || "" });
+    }
+
+    if (model === "gpt") {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 1024,
+        }),
+      });
+      const data = await res.json();
+      return NextResponse.json({ text: data.choices?.[0]?.message?.content || "" });
+    }
+
+    return NextResponse.json({ text: "Unknown model" }, { status: 400 });
+  } catch (err) {
+    return NextResponse.json({ text: `Error: ${err}` }, { status: 500 });
+  }
+}
