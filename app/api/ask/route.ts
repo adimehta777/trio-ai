@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     if (model === "gemini") {
       const res = await fetch(
-       models/gemini-2.0-flash-lite:generateContent?key=${apiKey}
+       models/gemini-2.0-flash-exp:generateContent?key=${apiKey}
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
