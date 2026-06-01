@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState(() => loadKeys()), useRef, useEffect } from "react";
 
 const MODELS = [
   { id: "claude", name: "Claude", maker: "Anthropic", color: "#D4A853", bg: "#1A1208", accent: "#F5C842" },
