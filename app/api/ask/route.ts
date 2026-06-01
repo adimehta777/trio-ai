@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const { model, apiKey, prompt } = body;
 
   if (!apiKey) {
-    return NextResponse.json({ text: `No API key provided for ${model}` }, { status: 200 });
+    return NextResponse.json({ text: `No API key provided for ${model}` });
   }
 
   try {
@@ -24,22 +24,19 @@ export async function POST(req: NextRequest) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) return NextResponse.json({ text: `Claude API error: ${JSON.stringify(data)}` });
+      if (!res.ok) return NextResponse.json({ text: `Claude error: ${JSON.stringify(data)}` });
       return NextResponse.json({ text: data.content?.[0]?.text || "" });
     }
 
     if (model === "gemini") {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-        {
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-        }
-      );
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + apiKey;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      });
       const data = await res.json();
-      if (!res.ok) return NextResponse.json({ text: `Gemini API error: ${JSON.stringify(data)}` });
+      if (!res.ok) return NextResponse.json({ text: `Gemini error: ${JSON.stringify(data)}` });
       return NextResponse.json({ text: data.candidates?.[0]?.content?.parts?.[0]?.text || "" });
     }
 
@@ -48,7 +45,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: "Bearer " + apiKey,
         },
         body: JSON.stringify({
           model: "gpt-4o",
@@ -57,12 +54,12 @@ export async function POST(req: NextRequest) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) return NextResponse.json({ text: `GPT API error: ${JSON.stringify(data)}` });
+      if (!res.ok) return NextResponse.json({ text: `GPT error: ${JSON.stringify(data)}` });
       return NextResponse.json({ text: data.choices?.[0]?.message?.content || "" });
     }
 
     return NextResponse.json({ text: `Unknown model: ${model}` });
   } catch (err) {
-    return NextResponse.json({ text: `Exception for ${model}: ${err}` });
+    return NextResponse.json({ text: `Exception: ${err}` });
   }
 }
