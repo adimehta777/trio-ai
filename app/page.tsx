@@ -8,8 +8,13 @@ const MODELS = [
 ];
 
 const STORAGE_KEY = "trio_api_keys";
-function loadKeys(): Record<string,string> { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; } }
-function saveKeys(keys: Record<string,string>) { localStorage.setItem(STORAGE_KEY, JSON.stringify(keys)); }
+function loadKeys(): Record<string,string> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
+}
+function saveKeys(keys: Record<string,string>) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+}
 
 async function callClaude(apiKey: string, prompt: string) {
   const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude", apiKey, prompt }) });
@@ -105,23 +110,35 @@ export default function TrioAI() {
   const [loading, setLoading] = useState<Record<string,boolean>>({ claude:false, gemini:false, gpt:false });
   const [errors, setErrors] = useState<Record<string,string|null>>({ claude:null, gemini:null, gpt:null });
   const [hasAsked, setHasAsked] = useState(false);
+  const [ready, setReady] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setKeys(loadKeys());
+    setReady(true);
+  }, []);
 
   const keysSet = MODELS.filter(m => keys[m.id]).length;
 
+  function handleSaveKeys(newKeys: Record<string,string>) {
+    saveKeys(newKeys);
+    setKeys(newKeys);
+  }
+
   async function handleAsk() {
     if (!prompt.trim()) return;
+    const currentKeys = loadKeys();
     setHasAsked(true);
     setResponses({ claude:null, gemini:null, gpt:null });
     setErrors({ claude:null, gemini:null, gpt:null });
     setLoading({ claude:true, gemini:true, gpt:true });
     const runners = [
-      { id:"claude", fn: () => callClaude(keys.claude, prompt) },
-      { id:"gemini", fn: () => callGemini(keys.gemini, prompt) },
-      { id:"gpt",    fn: () => callGPT(keys.gpt, prompt) },
+      { id:"claude", fn: () => callClaude(currentKeys.claude, prompt) },
+      { id:"gemini", fn: () => callGemini(currentKeys.gemini, prompt) },
+      { id:"gpt",    fn: () => callGPT(currentKeys.gpt, prompt) },
     ];
     runners.forEach(({ id, fn }) => {
-      if (!keys[id]) {
+      if (!currentKeys[id]) {
         setLoading(l => ({...l,[id]:false}));
         setErrors(e => ({...e,[id]:"No API key — tap ⚙ to add one"}));
         return;
@@ -132,6 +149,8 @@ export default function TrioAI() {
   }
 
   const anyLoading = Object.values(loading).some(Boolean);
+
+  if (!ready) return <div style={{ background:"#080808", minHeight:"100vh" }} />;
 
   return (
     <div style={{ minHeight:"100vh", background:"#080808", color:"#E8E0D0", maxWidth:"480px", margin:"0 auto", padding:"0 0 80px" }}>
@@ -193,7 +212,7 @@ export default function TrioAI() {
           </button>
         </div>
       </div>
-      {showKeys && <KeysModal keys={keys} onSave={setKeys} onClose={() => setShowKeys(false)} />}
+      {showKeys && <KeysModal keys={keys} onSave={handleSaveKeys} onClose={() => setShowKeys(false)} />}
     </div>
   );
 }
